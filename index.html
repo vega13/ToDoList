@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8">
+        <title>fe17-express-index</title>
+        <style media="screen">
+            body {
+                font-family: sans-serif;
+                margin: 0 auto;
+                background-color: #e2e2e2;
+            }
+
+            time {
+                color: lightblue;
+            }
+
+            .todo-add {
+                font-size: 30px;
+                height: 50px;
+                padding-top: 10px;
+                text-align: center;
+                background-color: rgba(47, 47, 47, 0.98);
+                color: #DDD;
+            }
+
+            .content {
+                margin: 0 400px;
+            }
+
+            .complete {
+                text-decoration: line-through;
+                color: #666666;
+            }
+
+            .todo-progress {
+                font-size: 30px;
+            }
+
+            .todo-list {
+            }
+
+            .todo {
+                background-color: white;
+                border-radius: 3px;
+                margin-top: 5px;
+                padding: 5px;
+                border-left: 5px solid #629A9C;
+            }
+
+            .right {
+                float: right;
+            }
+            #id-todo-add-input {
+                border-style: none;
+                border-radius: 3px;
+                height: 20px;
+                width: 300px;
+                margin-left: 100px;
+            }
+
+            #id-todo-add-span {
+                margin-top: 10px;
+            }
+        </style>
+    </head>
+    <body>
+        <div class="todo-add">
+            <span id="id-todo-add-span">ToDoList</span>
+            <input id="id-todo-add-input" placeholder=" 添加ToDo">
+            <button id="id-todo-add-button">添加</button>
+        </div>
+
+        <div class="content">
+            <div class="todo-progress">正在进行</div>
+            <div class="todo-list">
+
+            </div>
+        </div>
+<script>
+var log = console.log.bind(console, '*** ')
+
+var e = function(sel) {
+    return document.querySelector(sel)
+}
+
+var bindAll = function (elements, eventName, callback) {
+    for (var i = 0; i < elements.length; i++) {
+        var tag = elements[i]
+        tag.addEventListener(eventName, callback)
+    }
+}
+
+var ajax = function(method, path, data, reseponseCallback) {
+    var r = new XMLHttpRequest()
+    // 设置请求方法和请求地址
+    r.open(method, path, true)
+    // 设置发送的数据的格式
+    r.setRequestHeader('Content-Type', 'application/json')
+    // 注册响应函数
+    r.onreadystatechange = function() {
+        if(r.readyState === 4) {
+            // reseponseCallback 服务器返回的信息
+            reseponseCallback(r.response)
+        }
+    }
+    // 处理 data
+    data = JSON.stringify(data, null, 2)
+    // 发送请求
+    r.send(data)
+}
+
+var apiTodoAll = callback => {
+    var method = 'GET'
+    var path = '/todo/all'
+    var data = {}
+    ajax(method, path, data, callback)
+}
+
+var apiTodoAdd = (task, callback) => {
+    var method = 'POST'
+    var path = '/todo/add'
+    var data = {
+        task: task
+    }
+    ajax(method, path, data, callback)
+}
+
+var apiTodoDelete = (id, callback) => {
+    var method = 'GET'
+    var path = '/todo/delete/' + id
+    var data = {}
+    ajax(method, path, data, callback)
+}
+
+var apiTodoComplete = (id, callback) => {
+    var method = 'GET'
+    var path = '/todo/complete/' + id
+    var data = {}
+    ajax(method, path, data, callback)
+}
+
+var insertTodoHTML = function(todo) {
+    var complete = ''
+    if (todo.complete == true) {
+        complete = 'complete'
+    }
+    var tmp = `<div class="todo">
+                <span class="${complete}">${todo.task}</span>
+                <div class="right">
+                <button class="todo-delete-button" data-id="${todo.id}">删除</button>
+                <button class="todo-complete-button" data-id="${todo.id}">完成</button>
+                <time>${todo.time}</time>
+                <div>
+                </div>`
+    var div = e('.todo-list')
+    div.innerHTML += tmp
+}
+
+var loadTodoAll = function() {
+    apiTodoAll(function(data) {
+        var ts = JSON.parse(data)
+        for (var i = 0; i < ts.length; i++) {
+            var t = ts[i]
+            insertTodoHTML(t)
+        }
+    })
+}
+
+var bindAdd = function() {
+    var button = e('#id-todo-add-button')
+    button.addEventListener('click', function() {
+        var input = e('#id-todo-add-input')
+        apiTodoAdd(input.value, function(data) {
+            var t = JSON.parse(data)
+            insertTodoHTML(t)
+        })
+    })
+}
+
+var bindTodo = function() {
+    var div = e('.todo-list')
+    div.addEventListener('click', function(event) {
+        var self = event.target
+        var id = self.dataset.id
+        var todo = self.parentNode.parentNode
+        if (self.classList.contains('todo-delete-button') == true) {
+            apiTodoDelete(id, function(data) {
+                div.removeChild(todo)
+            })
+        } else if (self.classList.contains('todo-complete-button') == true) {
+            apiTodoComplete(id, function(data) {
+                var task = todo.querySelector('span')
+                log('task', todo, task)
+                task.setAttribute("class", "complete")
+            })
+        }
+    })
+}
+
+var __main = function() {
+    loadTodoAll()
+    bindAdd()
+    bindTodo()
+}
+
+__main()
+</script>
+    </body>
+</html>
